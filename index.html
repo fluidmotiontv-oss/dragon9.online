@@ -73,6 +73,8 @@
             box-shadow: 0 0 40px rgba(255,204,51,0.15);
             max-width: 480px;
             width: 90%;
+            max-height: 88dvh;
+            overflow-y: auto;
             transition: opacity 0.5s ease, transform 0.5s ease;
         }
 
@@ -117,6 +119,22 @@
             color: #ffcc33;
             margin-bottom: 4px;
         }
+
+        .track {
+            border: 1px solid rgba(255,204,51,0.35);
+            padding: 12px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .track .track-name {
+            display: block;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: #ffcc33;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+        .track audio { width: 100%; height: 36px; }
 
         .fernstrip {
             position: relative;
@@ -219,6 +237,10 @@
                 <div class="hoard-cell"><strong>10.9.9.1</strong>WireGuard Mesh</div>
                 <div class="hoard-cell"><strong>54 min</strong>D9 Hour</div>
                 <div class="hoard-cell"><strong>432 Hz</strong>Tuning</div>
+            </div>
+            <div class="track">
+                <span class="track-name">🎵 Beneath The Iron Tooth — the Dragon9 anthem</span>
+                <audio controls preload="none" src="assets/Beneath_The_Iron_Tooth.mp3"></audio>
             </div>
             <div class="fernstrip">
                 <video src="assets/entrance.mp4" poster="assets/entrance-poster.jpg" autoplay muted loop playsinline></video>
