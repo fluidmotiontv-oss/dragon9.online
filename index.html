@@ -149,20 +149,6 @@
             text-shadow: 0 0 10px rgba(0,0,0,0.9);
         }
 
-        .audio-indicator {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 20;
-            background: rgba(0,0,0,0.8);
-            border: 1px solid #ffcc33;
-            padding: 8px 14px;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            cursor: pointer;
-            pointer-events: auto;
-        }
-
         /* Modal Overlay for Private Module Portal */
         .modal {
             display: none;
@@ -240,7 +226,7 @@
             </div>
             <div class="track">
                 <span class="track-name">🎵 Beneath The Iron Tooth — the Dragon9 anthem</span>
-                <audio controls preload="none" src="assets/Beneath_The_Iron_Tooth.mp3"></audio>
+                <audio id="anthem" controls preload="none" src="assets/Beneath_The_Iron_Tooth.mp3"></audio>
             </div>
             <div class="fernstrip">
                 <video src="assets/entrance.mp4" poster="assets/entrance-poster.jpg" autoplay muted loop playsinline></video>
@@ -257,10 +243,6 @@
             <span style="font-size: 0.75rem; opacity: 0.7;">DRAGON 9 PROTOCOL // D9 TIME: <span id="d9clock">--:--:--</span></span>
             <span style="font-size: 0.75rem; opacity: 0.7;">FLUID MOTION OF THE FUTURE</span>
         </div>
-    </div>
-
-    <div class="audio-indicator" id="audioToggle" onclick="toggleAudio()">
-        AUDIO: MUTED (CLICK TO START)
     </div>
 
     <!-- Private Module Portal Modal -->
@@ -298,7 +280,6 @@
             document.getElementById('welcomeCard').classList.add('hidden');
             document.getElementById('hoardCard').classList.remove('hidden');
             isColorfulMode = true; // Switch to vibrant chromatic waves
-            if (!audioCtx) toggleAudio(); // Auto-start audio smoothly on entry
         }
 
         function goToFirstPage() {
@@ -322,47 +303,33 @@
         tickD9();
         setInterval(tickD9, 1000);
 
-        // Web Audio API Synthesizer (432 Hz Ambient Loop)
+        // Audio analyser — the anthem drives the mesh
         let audioCtx = null;
-        let isPlaying = false;
-        let masterGain = null;
+        let analyser = null;
+        let freqData = null;
 
-        function toggleAudio() {
+        function ensureAnalyser() {
+            if (analyser || !audioCtx) return;
+            analyser = audioCtx.createAnalyser();
+            analyser.fftSize = 256;
+            analyser.smoothingTimeConstant = 0.8;
+            freqData = new Uint8Array(analyser.frequencyBinCount);
+        }
+
+        // Anthem (audio element) feeds the mesh — wire it on first play
+        let anthemWired = false;
+        document.getElementById('anthem').addEventListener('play', () => {
+            if (anthemWired) return;
+            anthemWired = true;
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                masterGain = audioCtx.createGain();
-                masterGain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-                masterGain.connect(audioCtx.destination);
-
-                const osc1 = audioCtx.createOscillator();
-                osc1.type = 'sine';
-                osc1.frequency.setValueAtTime(108, audioCtx.currentTime);
-                osc1.connect(masterGain);
-                osc1.start();
-
-                const osc2 = audioCtx.createOscillator();
-                osc2.type = 'triangle';
-                osc2.frequency.setValueAtTime(216, audioCtx.currentTime);
-                osc2.connect(masterGain);
-                osc2.start();
             }
-
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            isPlaying = !isPlaying;
-            if (isPlaying) {
-                masterGain.gain.setTargetAtTime(0.2, audioCtx.currentTime, 0.5);
-                document.getElementById('audioToggle').innerText = 'AUDIO: 432 Hz ACTIVE';
-                document.getElementById('audioToggle').style.borderColor = '#ffcc33';
-                document.getElementById('audioToggle').style.background = 'rgba(255,204,51,0.2)';
-            } else {
-                masterGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.5);
-                document.getElementById('audioToggle').innerText = 'AUDIO: MUTED';
-                document.getElementById('audioToggle').style.background = 'rgba(0,0,0,0.8)';
-            }
-        }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            ensureAnalyser();
+            const src = audioCtx.createMediaElementSource(document.getElementById('anthem'));
+            src.connect(analyser);
+            analyser.connect(audioCtx.destination);
+        });
 
         // Three.js Interactive Wave Grid + Chromatic Ripples
         const container = document.getElementById('webgl-container');
@@ -410,6 +377,15 @@
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime() * 1.5;
 
+            // Audio level drives the mesh (synth + anthem both feed the analyser)
+            let audioLevel = 0;
+            if (analyser && freqData) {
+                analyser.getByteFrequencyData(freqData);
+                let sum = 0;
+                for (let i = 0; i < freqData.length; i++) sum += freqData[i];
+                audioLevel = sum / freqData.length / 255;
+            }
+
             raycaster.setFromCamera(mouse, camera);
             const intersects = raycaster.intersectObject(plane);
 
@@ -417,17 +393,22 @@
             if (isColorfulMode) {
                 const hue = (time * 15) % 360;
                 material.color.setHSL(hue / 360, 0.9, 0.6);
-                material.opacity = 0.45;
+                material.opacity = 0.45 + audioLevel * 0.3;
             } else {
                 material.color.setHex(0xffcc33);
-                material.opacity = 0.3;
+                material.opacity = 0.3 + audioLevel * 0.4;
             }
 
             for (let i = 0; i < posAttribute.count; i++) {
                 const x = posAttribute.getX(i);
                 const z = posAttribute.getZ(i);
 
-                let wave = Math.sin(x * 0.1 + time) * Math.cos(z * 0.1 + time * 0.8) * 2.5;
+                let wave = Math.sin(x * 0.1 + time) * Math.cos(z * 0.1 + time * 0.8) * (2.5 + audioLevel * 8);
+
+                // per-vertex frequency energy — the mesh dances to the music
+                if (audioLevel > 0.01) {
+                    wave += (freqData[i % freqData.length] / 255) * audioLevel * 6;
+                }
 
                 if (intersects.length > 0) {
                     const dist = Math.sqrt(Math.pow(x - intersects[0].point.x, 2) + Math.pow(z - intersects[0].point.z, 2));
