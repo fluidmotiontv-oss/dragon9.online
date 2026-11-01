@@ -118,6 +118,19 @@
             margin-bottom: 4px;
         }
 
+        .fernstrip {
+            position: relative;
+            overflow: hidden;
+            border: 1px solid rgba(255,204,51,0.35);
+            margin-bottom: 15px;
+        }
+        .fernstrip video { display: block; width: 100%; height: 140px; object-fit: cover; }
+        .fernstrip .fern-title {
+            position: absolute; top: 8px; left: 0; right: 0; text-align: center;
+            font-size: 0.62rem; letter-spacing: 3px; color: #ffcc33; text-transform: uppercase;
+            text-shadow: 0 0 10px rgba(0,0,0,0.9);
+        }
+
         .audio-indicator {
             position: fixed;
             bottom: 20px;
@@ -206,6 +219,10 @@
                 <div class="hoard-cell"><strong>10.9.9.1</strong>WireGuard Mesh</div>
                 <div class="hoard-cell"><strong>54 min</strong>D9 Hour</div>
                 <div class="hoard-cell"><strong>432 Hz</strong>Tuning</div>
+            </div>
+            <div class="fernstrip">
+                <video src="assets/entrance.mp4" poster="assets/entrance-poster.jpg" autoplay muted loop playsinline></video>
+                <p class="fern-title">The Fern Path</p>
             </div>
             <div style="display: grid; grid-template-columns: 1fr; gap: 10px; margin-bottom: 15px;">
                 <a href="https://fluidmotiontv-oss.github.io/Dragon9/" target="_blank" class="action-btn" style="text-align: center; font-size: 0.8rem; padding: 10px;">Visit the Shopfront</a>
